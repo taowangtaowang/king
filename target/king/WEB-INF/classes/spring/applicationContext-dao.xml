@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+	<!-- 数据库连接池 -->
+	<!-- 加载配置文件 -->
+	<context:property-placeholder location="classpath:resource/*.properties"/>
+	<!-- 数据库连接池 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="maxActive" value="10" />
+		<property name="minIdle" value="5" />
+		<property name="filters" value="stat,logback" />
+	</bean>
+	<!-- 数据库连接池 -->
+	<bean id="dataSource1" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+		<property name="url" value="${jdbc.url1}" />
+		<property name="username" value="${jdbc.username1}" />
+		<property name="password" value="${jdbc.password1}" />
+		<property name="driverClassName" value="${jdbc.driver1}" />
+		<property name="maxActive" value="10" />
+		<property name="minIdle" value="5" />
+		<property name="filters" value="stat,log4j" />
+	</bean>
+	<!-- 配置sqlsessionFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="configLocation" value="classpath:mybatis/SqlMapConfig.xml"></property>
+		<property name="dataSource" ref="dynamicDataSource"></property>
+	</bean>
+	<!-- 配置SqlSessionTemplate -->
+    <!--<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+        <constructor-arg name="sqlSessionFactory" ref="sqlSessionFactory" />
+    </bean>-->
+	<!-- 配置扫描包，加载mapper代理对象 --><!--上述改为tkmybatis-->
+	<bean class="tk.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.irs.mapper"></property>
+		<property name="properties" >
+			<value> 
+           mappers=tk.mybatis.mapper.common.Mapper,tk.mybatis.mapper.common.special.InsertListMapper
+       </value>
+		</property>
+		<!--<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>-->
+	</bean>
+
+	
+	<!-- 开启aop，对类代理 -->
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<!-- 配置数据库注解aop -->
+	<!-- 自定义数据源切换类 -->
+    <bean id="dynamicDataSource" class="com.irs.annotation.DynamicDataSource">
+        <!-- 这里可以指定默认的数据源 -->
+        <property name="defaultTargetDataSource" ref="dataSource" />
+        <property name="targetDataSources">
+            <map key-type="java.lang.String">
+                <!-- 指定lookupKey和与之对应的数据源 -->
+                <entry key="dataSource" value-ref="dataSource"></entry>
+                <entry key="dataSource1" value-ref="dataSource1"></entry>
+            </map>
+        </property>
+    </bean>
+    
+    <bean id="logAopAction" class="com.irs.annotation.DataSourceAspect"/>
+
+	<!-- 验证码 -->
+	<bean id="captchaProducer" class="com.google.code.kaptcha.impl.DefaultKaptcha">  
+        <property name="config">  
+            <bean class="com.google.code.kaptcha.util.Config">  
+                <constructor-arg>  
+                    <props>  
+                        <prop key="kaptcha.border">no</prop>  
+                        <!--  <prop key="kaptcha.border.color">105,179,90</prop>   -->
+                        <prop key="kaptcha.textproducer.font.color">blue</prop>  
+                        <prop key="kaptcha.image.width">125</prop>  
+                        <prop key="kaptcha.image.height">45</prop>  
+                        <prop key="kaptcha.textproducer.font.size">45</prop>  
+                        <prop key="kaptcha.session.key">code</prop>  
+                        <prop key="kaptcha.textproducer.char.length">4</prop>  
+                        <prop key="kaptcha.textproducer.font.names">宋体,楷体,微软雅黑</prop>  
+                    </props>  
+                </constructor-arg>  
+            </bean>  
+        </property>  
+    </bean>
+</beans>
